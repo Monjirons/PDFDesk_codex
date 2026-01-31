@@ -1,58 +1,79 @@
-# Implementation Plan - Phase 0: Project Backbone & UI Skeleton
+# Implementation Plan - Phase 1: PDF Import & Material Shelf
 
 ## Goal Description
 
-Establish the UI structure and state management foundation for PDFDesk. This phase focuses on creating the static layout with panel toggles and identifying the core state models, ensuring the application "shell" is ready for future feature additions without architectural restructuring.
+Enable users to import PDF files (via Drag & Drop or File Menu) and manage them in the Bottom Panel (Material Shelf). The imported PDFs will be displayed as "cover cards" in a horizontal scrollable list. Users can reorder these cards (visual only) and remove them.
+
+This phase focuses on the **Input** side of the application workflow.
 
 ## User Review Required
-
-None for this phase.
+>
+> [!NOTE]
+> **PDF Parsing Strategy**: For this phase, we will implement a basic PDF loader using `pdfjs-dist` to extract:
+>
+> 1. File Name
+> 2. Total Page Count
+> 3. First Page Thumbnail (for the cover card)
+>
+> We will not yet implement the full page text extraction or high-res rendering required for the editing view.
 
 ## Proposed Changes
 
-### Tech Stack & Project Structure
+### [Store Updates]
 
-- **Framework**: React + TypeScript (assumed standard for this type of app, or Vanilla as per `web_application_development` rules? The user didn't specify, but `web_application_development` says "If the USER specifies that they want a more complex web app, use a framework like Next.js or Vite". Since this is an "app" (PDFDesk) and likely needs complex state, I will use **Vite + React + TypeScript**.
-- **Styling**: Vanilla CSS (CSS Modules or global CSS) as per rules. avoiding Tailwind unless requested.
-- **State Management**: Zustand or Context API? Given the complex state (PDFs, pages, selection), **Zustand** is recommended for better performance and separation of concerns.
+#### [MODIFY] `src/store/appStore.ts`
 
-### [UI Layout]
+- Update `PDFDocument` interface to include real data properties (`file`, `thumbnailUrl`, `id`).
+- Add actions:
+  - `addSourcePDF(file: File)`: Async action to process file and add to store.
+  - `removeSourcePDF(id: string)`: Remove from `sourcePDFs` list.
+  - `reorderSourcePDFs(startIndex: number, endIndex: number)`: Reorder logic.
 
-#### [NEW] `src/App.tsx`
+### [New Components]
 
-- Main layout container (Grid/Flex).
-- Components for:
-  - `Header` (Orange)
-  - `QuickToolbar` (Purple)
-  - `MainView` (White - Placeholder)
-  - `LeftPanel` (Page List)
-  - `RightPanel` (Material Pages)
-  - `BottomPanel` (Material Shelf)
+#### [NEW] `src/utils/pdfLoader.ts`
 
-#### [NEW] `src/components/layout/Panel.tsx`
+- Utility functions to interface with `pdfjs-dist`.
+- `loadPDF(file: File)`: Returns metadata and cover image.
 
-- Generic collapsible panel component.
+#### [NEW] `src/components/features/PDFCard.tsx`
 
-### [State Management]
+- UI component for a single PDF in the shelf.
+- Displays: Thumbnail, Filename, Page count.
+- Handles: Selection click, Right-click context menu (Remove), Drag handles.
 
-#### [NEW] `src/store/appStore.ts`
+#### [NEW] `src/components/features/MaterialShelf.tsx`
 
-- Define interfaces:
-  - `PDFDocument` (source)
-  - `PageObject`
-- State slices:
-  - `uiState`: panel visibility (`leftOpen`, `rightOpen`, `bottomOpen`), view mode (`pageView` vs `infiniteCanvas`).
-  - `pdfState`: `sourcePDFs`, `activeEditPDF`, `selectedSourceId`, `selectedPageId`.
+- Container for `PDFCard` list.
+- Implements:
+  - Horizontal scrolling.
+  - Drag & Drop sorting (using `@dnd-kit/core` or similar lightweight logic if complex dnd is overkill, but `dnd-kit` is recommended for robust interactions). **Decision**: Will start with simple HTML5 DnD or a lightweight library `dnd-kit` if allowed. *Update: I will use `@dnd-kit/core` and `@dnd-kit/sortable` for robust sortable lists.*
+
+#### [NEW] `src/components/features/FileDropZone.tsx`
+
+- A transparent overlay or event listener on the main app container to handle file drops.
+
+### [UI Integration]
+
+#### [MODIFY] `src/App.tsx`
+
+- Integrate `FileDropZone` at the root.
+- Replace placeholder in `BottomPanel` with `MaterialShelf`.
 
 ## Verification Plan
 
 ### Automated Tests
 
-- Check if the app builds and runs.
-- Verify state updates (console logs or devtools) when toggling panels.
+- Unit test for `reorderSourcePDFs` in store (logic verification).
 
 ### Manual Verification
 
-- **Launch App**: Verify the layout matches the wireframe keywords (Orange/Purple/White structure).
-- **Panel Toggles**: Click buttons to open/close Left/Right/Bottom panels.
-- **Resize Check**: Ensure UI doesn't break when window is resized (though panel resizing itself is Phase 7).
+- **Import**:
+  - Drag & drop a PDF file into the window -> Check if it appears in the bottom shelf.
+  - Try dragging non-PDF files -> Should be ignored or show error.
+- **Display**:
+  - Verify the card shows the correct filename and a thumbnail (or loading placeholder).
+- **Manage**:
+  - Click a card -> Selected state looks active (visual only for now).
+  - Drag card A to position B -> Order changes.
+  - Right-click/Delete button -> Card disappears.
