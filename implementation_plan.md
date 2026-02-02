@@ -1,79 +1,65 @@
-# Implementation Plan - Phase 1: PDF Import & Material Shelf
+# Phase 10: Right Panel Drag & Drop Implementation Plan
 
-## Goal Description
+## Goal
 
-Enable users to import PDF files (via Drag & Drop or File Menu) and manage them in the Bottom Panel (Material Shelf). The imported PDFs will be displayed as "cover cards" in a horizontal scrollable list. Users can reorder these cards (visual only) and remove them.
-
-This phase focuses on the **Input** side of the application workflow.
+Enable dragging pages from the Right Panel (Material Shelf) directly onto the Infinite Canvas to add them to the workspace at the specific drop location.
 
 ## User Review Required
 >
-> [!NOTE]
-> **PDF Parsing Strategy**: For this phase, we will implement a basic PDF loader using `pdfjs-dist` to extract:
->
-> 1. File Name
-> 2. Total Page Count
-> 3. First Page Thumbnail (for the cover card)
->
-> We will not yet implement the full page text extraction or high-res rendering required for the editing view.
+> [!IMPORTANT]
+> This change requires significant refactoring of the Drag & Drop architecture (`DndContext` hoisting).
+> The `InfiniteCanvas` will no longer manage its own Drag Context, meaning `App.tsx` will become the central handler for all drag operations.
 
 ## Proposed Changes
 
-### [Store Updates]
+### Component Architecture
 
-#### [MODIFY] `src/store/appStore.ts`
+Current:
 
-- Update `PDFDocument` interface to include real data properties (`file`, `thumbnailUrl`, `id`).
-- Add actions:
-  - `addSourcePDF(file: File)`: Async action to process file and add to store.
-  - `removeSourcePDF(id: string)`: Remove from `sourcePDFs` list.
-  - `reorderSourcePDFs(startIndex: number, endIndex: number)`: Reorder logic.
+- `InfiniteCanvas` (DndContext) -> internal items only
+- `MaterialPageList` (No DnD)
 
-### [New Components]
+New:
 
-#### [NEW] `src/utils/pdfLoader.ts`
+- `App.tsx` (DndContext)
+  - `MaterialPageList` (Draggable Sources)
+  - `InfiniteCanvas` (Droppable Target & Existing Items)
 
-- Utility functions to interface with `pdfjs-dist`.
-- `loadPDF(file: File)`: Returns metadata and cover image.
+### File Changes
 
-#### [NEW] `src/components/features/PDFCard.tsx`
+#### [MODIFY] [App.tsx](file:///c:/Users/meruy/.gemini/PDFDesk/src/App.tsx)
 
-- UI component for a single PDF in the shelf.
-- Displays: Thumbnail, Filename, Page count.
-- Handles: Selection click, Right-click context menu (Remove), Drag handles.
+- Wrap `app-body` with `DndContext`.
+- Implement centralized `handleDragEnd`.
+- Manage `DragOverlay` to show the thumbnail while dragging across panels.
 
-#### [NEW] `src/components/features/MaterialShelf.tsx`
+#### [MODIFY] [InfiniteCanvas.tsx](file:///c:/Users/meruy/.gemini/PDFDesk/src/components/features/InfiniteCanvas/InfiniteCanvas.tsx)
 
-- Container for `PDFCard` list.
-- Implements:
-  - Horizontal scrolling.
-  - Drag & Drop sorting (using `@dnd-kit/core` or similar lightweight logic if complex dnd is overkill, but `dnd-kit` is recommended for robust interactions). **Decision**: Will start with simple HTML5 DnD or a lightweight library `dnd-kit` if allowed. *Update: I will use `@dnd-kit/core` and `@dnd-kit/sortable` for robust sortable lists.*
+- Remove `DndContext`.
+- Accept `ref` or expose `TransformWrapper` instance to allow `App.tsx` to calculate drop coordinates.
+- Ensure it acts as a `Droppable` zone (`id: 'canvas-drop-zone'`).
 
-#### [NEW] `src/components/features/FileDropZone.tsx`
+#### [MODIFY] [MaterialPageList.tsx](file:///c:/Users/meruy/.gemini/PDFDesk/src/components/features/MaterialPageList.tsx)
 
-- A transparent overlay or event listener on the main app container to handle file drops.
+- Wrap thumbnails in a new `DraggableThumbnail` component.
+- Set drag data: `{ type: 'new-page', pdfId, pageNumber }`.
 
-### [UI Integration]
+### Coordinate Calculation Logic
 
-#### [MODIFY] `src/App.tsx`
+When dropping a 'new-page' item:
 
-- Integrate `FileDropZone` at the root.
-- Replace placeholder in `BottomPanel` with `MaterialShelf`.
+1. Get drop coordinates (Screen X/Y) from `DragEndEvent`.
+2. Get Canvas Transform (Pan X/Y, Scale) from `TransformWrapper` ref.
+3. Calculate:
+   `CanvasX = (ScreenX - PanX - CanvasOffsetLeft) / Scale`
+   `CanvasY = (ScreenY - PanY - CanvasOffsetTop) / Scale`
+4. Call `addPageToTarget(..., CanvasX, CanvasY)`.
 
 ## Verification Plan
 
-### Automated Tests
-
-- Unit test for `reorderSourcePDFs` in store (logic verification).
-
 ### Manual Verification
 
-- **Import**:
-  - Drag & drop a PDF file into the window -> Check if it appears in the bottom shelf.
-  - Try dragging non-PDF files -> Should be ignored or show error.
-- **Display**:
-  - Verify the card shows the correct filename and a thumbnail (or loading placeholder).
-- **Manage**:
-  - Click a card -> Selected state looks active (visual only for now).
-  - Drag card A to position B -> Order changes.
-  - Right-click/Delete button -> Card disappears.
+1. **Right Panel Drag**: Drag a page from the Right Panel. Verify `DragOverlay` follows mouse.
+2. **Drop on Canvas**: Drop onto the canvas. Verify page appears at the exact mouse location.
+3. **Drop outside**: Drop on UI panels. Verify nothing happens.
+4. **Existing Functionality**: Verify existing Canvas dragging and Background dragging still work (Regression Test).
