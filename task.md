@@ -3,80 +3,92 @@
 ## Phase 0: Project Backbone & UI Skeleton
 
 - [x] **UI Layout Implementation**
-  - [x] Create main layout structure (Orange/Purple/White/Left/Right/Bottom panels)
-  - [x] Implement panel toggles (Show/Hide)
-  - [x] Implement ViewMode switching (PageView / InfiniteCanvas placeholders)
+  - [x] Create main layout structure
+  - [x] Implement panel toggles
+  - [x] Implement ViewMode switching
 - [x] **State Model Scaffolding**
-  - [x] Define `ActiveEditPDF`
-  - [x] Define `SourcePDFs`
-  - [x] Define `SelectedSourcePDF`
-  - [x] Define `LeftPages`
-  - [x] Define `HiddenFlags`
+  - [x] Define Store Slices (`uiState`, `pdfState`)
 
 ## Phase 1: PDF Import & Material Shelf (Bottom)
 
-- [ ] **PDF Loading**
-  - [ ] File menu implementation
-  - [ ] Drag & Drop to app
-- [ ] **Bottom Panel (Material Shelf)**
-  - [ ] Display cover cards (horizontal scroll)
-  - [ ] Drag & Drop reordering (visual only)
-  - [ ] Remove PDF (Right click/Del)
+- [x] **PDF Loading**
+  - [x] File menu & Drag/Drop Import
+  - [x] Loading states
+- [x] **Bottom Panel (Material Shelf)**
+  - [x] Display cards & Reorder
+  - [x] Remove PDF
 
 ## Phase 2: Material Pages (Right) & Selection Sync
 
-- [ ] **Selection Logic**
-  - [ ] Select `SelectedSourcePDF` in bottom panel
-  - [ ] Reflect selection in right panel header
-- [ ] **Right Panel**
-  - [ ] Display page thumbnails of selected PDF
-  - [ ] Implement open/close behavior (Auto-open logic)
+- [x] **Selection Logic**
+  - [x] Store update: `selectedSourceId`
+- [x] **Right Panel (Material Pages)**
+  - [x] Display individual pages (Draggable)
+  - [x] Thumbnail generation
 
-## Phase 3: Editing Target (Left) & Page Addition (Right -> Center -> Left)
+## Phase 3: Editing Target (Left) & Page Addition
 
-- [ ] **Editing Target**
-  - [ ] Manage `ActiveEditPDF`
-  - [ ] Ensure left panel updates when active edit changes
-- [ ] **Page Addition**
-  - [ ] D&D from Right to Center adds to Left (append)
-- [ ] **Left Panel Operations**
-  - [ ] Reorder pages (D&D)
-  - [ ] Visibility Toggle (Eye icon)
+- [x] **Editing Target**
+  - [x] Manage `ActiveEditPDF`
+- [x] **Page Addition**
+  - [x] D&D from Right to Canvas/Target
+- [x] **Left Panel Operations**
+  - [x] Reorder pages
+  - [x] Visibility Toggle
 
-## Phase 4: Export & Visibility Handling
+## Phase 4: Export
 
-- [ ] **Export Logic**
-  - [ ] Output pages in Left Panel order
-  - [ ] Exclude hidden pages
-- [ ] **MVP Verification**
+- [x] **Export Logic**
+  - [x] Export visible pages in order
 
 ## Phase 5: Undo/Redo
 
-- [ ] **Undo Logic**
-  - [ ] Implement Undo/Redo for critical actions (Add/Delete/Reorder/Hide/Group)
+- [x] **Undo Logic**
+  - [x] Integrated `zundo` with Store
 
 ## Phase 6: Infinite Canvas
 
-- [ ] **Basic Display**
-  - [ ] Place PageObjects on canvas
-- [ ] **Collision Resolution**
-  - [ ] Improve placement logic (no overlap)
+- [x] **Basic Display**
+  - [x] Render `CanvasItem` at coordinates
+  - [x] Zoom/Pan support (`react-zoom-pan-pinch`)
+- [x] **Drag & Drop**
+  - [x] Canvas Item Pulling (From List)
+  - [x] Background Grid Extraction
+  - [x] Canvas Item Moving
+- [x] **Collision Resolution**
+  - [x] Basic overlap prevention (Push logic)
 
-## Phase 7: Panel Resize & Persistence
+## Phase 7: Panel Resize
 
-- [ ] **Resizing**
-  - [ ] Implement splitters for Left/Right/Bottom
-- [ ] **Persistence**
-  - [ ] Save/Restore panel sizes
+- [x] **Resizing**
+  - [x] Splitters for panels
 
-## Phase 8: Grouping & Batch Visibility
+## Phase 9: Persistence
 
-- [ ] **Grouping**
-  - [ ] Implement Group/Ungroup
-  - [ ] Batch visibility toggle
-  - [ ] Update selection model for grouped pages
+- [x] **IndexedDB Implementation**
+  - [x] Project state saving/loading
 
-## Phase 9: Split View (Future)
+## Phase 8: Grouping & Advanced Selection
 
-- [ ] **Split Mode**
-  - [ ] Implement Upper/Lower split view
+- [x] **Multi-Selection Handling**
+  - [x] Implement Multi-Item Drag
+  - [x] Visual feedback for selection group
+- [x] **Grouping Logic**
+  - [x] Group/Ungroup Actions
+
+## Phase 11: Asymmetric Split View (Strict Spec)
+
+- [ ] **State & UI**
+  - [ ] Add `splitView` to `ViewMode`
+  - [ ] Add `splitRatio` (Default 0.5)
+- [ ] **Components**
+  - [ ] Create `PreviewPageList` (Bottom View - Canonical)
+  - [ ] Implement Vertical Split Layout in `App.tsx`
+- [ ] **Sync Logic**
+  - [ ] Canvas Selection -> Preview Scroll
+  - [ ] Preview Selection -> Canvas Highlight
+  - [ ] Ensure Canvas Move != Preview Reorder
+
+## Future Phases
+
+- [ ] **Alignment Tools** (Snap to grid, Align Left/Right)
